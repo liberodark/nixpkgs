@@ -32,6 +32,7 @@ stdenv.mkDerivation rec {
     libGLU
     eigen
     libigl
+    cl
   ];
 
   preBuildPhases = [ "setupDepsPhase" ];
@@ -39,6 +40,7 @@ stdenv.mkDerivation rec {
     mkdir -p _deps/eigen _deps/libigl
     ln -s ${eigen}/include/eigen3/* _deps/eigen/
     ln -s ${libigl}/include/* _deps/libigl/
+    ln -s ${cl}/lib/erlang/lib/cl* _deps/cl
   '';
 
   postPatch = ''
@@ -50,15 +52,31 @@ stdenv.mkDerivation rec {
     find . -type f -name "*.[eh]rl" -exec sed -i 's,wings/src/,../src/,' {} \;
     find . -type f -name "*.[eh]rl" -exec sed -i 's,wings/e3d/,../e3d/,' {} \;
     find . -type f -name "*.[eh]rl" -exec sed -i 's,wings/intl_tools/,../intl_tools/,' {} \;
+    echo "${version}" > version
   '';
 
-  ERL_LIBS = "${cl}/lib/erlang/lib";
+  makeFlags = [
+    "TYPE=opt"
+    "WINGS_VSN=${version}"
+  ];
+
+  buildPhase = ''
+    make TYPE=opt WINGS_VSN=${version}
+    mkdir -p priv
+    cd c_src
+    make
+    cd ..
+  '';
 
   # I did not test the *cl* part. I added the -pa just by imitation.
   installPhase = ''
-    mkdir -p $out/bin $out/lib/wings-${version}/ebin
-    cp ebin/* $out/lib/wings-${version}/ebin
-    cp -R textures shaders plugins $out/lib/wings-${version}
+    mkdir -p $out/bin $out/lib/wings-${version}/ebin $out/lib/wings-${version}/priv
+    cp -R ebin/* $out/lib/wings-${version}/ebin/
+    cp -R textures shaders plugins $out/lib/wings-${version}/
+    cp -R priv/* $out/lib/wings-${version}/priv/ || true
+    if [ -d c_src ]; then
+      find c_src -name "*.so" -exec cp {} $out/lib/wings-${version}/priv/ \;
+    fi
     cat << EOF > $out/bin/wings
     #!${runtimeShell}
     ${erlang}/bin/erl \
