@@ -1,11 +1,12 @@
-{ lib
-, stdenv
-, darwin
-, rustPlatform
-, fetchFromGitHub
-, pkg-config
-, installShellFiles
-,  versionCheckHook
+{
+  lib,
+  stdenv,
+  darwin,
+  rustPlatform,
+  fetchFromGitHub,
+  pkg-config,
+  installShellFiles,
+  versionCheckHook,
 }:
 
 rustPlatform.buildRustPackage rec {
@@ -40,6 +41,7 @@ rustPlatform.buildRustPackage rec {
     versionCheckHook
   ];
   versionCheckProgramArg = [ "--version" ];
+  doInstallCheck = true;
 
   meta = {
     description = "Use GPT-4(V), Gemini, LocalAI, Ollama and other LLMs in the terminal";
