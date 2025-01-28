@@ -1,4 +1,17 @@
-{ lib, stdenv, fetchFromGitHub, erlang, cl, libGL, libGLU, runtimeShell, git, eigen, libigl }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  erlang,
+  cl,
+  libGL,
+  libGLU,
+  runtimeShell,
+  git,
+  eigen,
+  libigl,
+  nix-update-script,
+}:
 
 stdenv.mkDerivation rec {
   pname = "wings";
@@ -12,7 +25,14 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ git ];
-  buildInputs = [ erlang cl libGL libGLU eigen libigl ];
+  buildInputs = [
+    erlang
+    cl
+    libGL
+    libGLU
+    eigen
+    libigl
+  ];
 
   preBuildPhases = [ "setupDepsPhase" ];
   setupDepsPhase = ''
@@ -46,6 +66,10 @@ stdenv.mkDerivation rec {
     EOF
     chmod +x $out/bin/wings
   '';
+
+  passthru = {
+    updateScript = nix-update-script { };
+  };
 
   meta = {
     homepage = "https://www.wings3d.com/";
