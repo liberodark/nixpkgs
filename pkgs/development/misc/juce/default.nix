@@ -28,17 +28,18 @@
   libXtst,
   sqlite,
   fontconfig,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "juce";
-  version = "8.0.4";
+  version = "8.0.6";
 
   src = fetchFromGitHub {
     owner = "juce-framework";
     repo = "juce";
-    rev = finalAttrs.version;
-    hash = "sha256-iAueT+yHwUUHOzqfK5zXEZQ0GgOKJ9q9TyRrVfWdewc=";
+    tag = finalAttrs.version;
+    hash = "sha256-uwZVBrvb5O9LEh00y93UeEu4u4rd+tLRCdQdxsMpXNg=";
   };
 
   patches = [
@@ -80,16 +81,20 @@ stdenv.mkDerivation (finalAttrs: {
 
   propagatedBuildInputs = [ fontconfig ];
 
-  meta = with lib; {
+  passthru = {
+    updateScript = nix-update-script { };
+  };
+
+  meta = {
     description = "Cross-platform C++ application framework";
-    mainProgram = "juceaide";
     longDescription = "Open-source cross-platform C++ application framework for creating desktop and mobile applications, including VST, VST3, AU, AUv3, AAX and LV2 audio plug-ins";
     homepage = "https://juce.com/";
     changelog = "https://github.com/juce-framework/JUCE/blob/${finalAttrs.version}/CHANGE_LIST.md";
-    license = with licenses; [
+    license = with lib.licenses; [
       agpl3Only # Or alternatively the JUCE license, but that would not be included in nixpkgs then
     ];
-    maintainers = with maintainers; [ kashw2 ];
-    platforms = platforms.all;
+    maintainers = with lib.maintainers; [ kashw2 ];
+    platforms = lib.platforms.all;
+    mainProgram = "juceaide";
   };
 })
