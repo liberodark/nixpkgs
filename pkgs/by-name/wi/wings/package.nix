@@ -60,12 +60,20 @@ stdenv.mkDerivation rec {
     "WINGS_VSN=${version}"
   ];
 
+  preBuild = ''
+    mkdir -p priv
+  '';
+
   buildPhase = ''
     make TYPE=opt WINGS_VSN=${version}
-    mkdir -p priv
     cd c_src
     make
     cd ..
+  '';
+
+  postBuild = ''
+    test -d ebin || exit 1
+    test -d priv || exit 1
   '';
 
   # I did not test the *cl* part. I added the -pa just by imitation.
@@ -80,7 +88,7 @@ stdenv.mkDerivation rec {
     cat << EOF > $out/bin/wings
     #!${runtimeShell}
     ${erlang}/bin/erl \
-    -pa $out/lib/wings-${version}/ebin -run wings_start start_halt "$@"
+      -pa $out/lib/wings-${version}/ebin -run wings_start start_halt "$@"
     EOF
     chmod +x $out/bin/wings
   '';
@@ -93,7 +101,7 @@ stdenv.mkDerivation rec {
     homepage = "https://www.wings3d.com/";
     description = "Subdivision modeler inspired by Nendo and Mirai from Izware";
     license = lib.licenses.tcltk;
-    maintainers = with lib.maintainers; [ liberodark ];
+    maintainers = with lib.maintainers; [ ];
     platforms = lib.platforms.linux;
     mainProgram = "wings";
   };
