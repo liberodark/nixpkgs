@@ -7,37 +7,40 @@
   perl,
   libmysqlclient,
   mariadb,
-  postgresql,
   mbedtls,
+  postgresql,
+  sqlite,
   versionCheckHook,
   nix-update-script,
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "ocsp-server";
-  version = "0.4.1";
+  version = "0.5.0";
 
   src = fetchFromGitHub {
     owner = "DorianCoding";
     repo = "OCSP-server";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-xYZ2NM+U7ZW5xDKVUhT+s66i/d7zaDLBbSbr6TDOG0o=";
+    hash = "sha256-kFism1EndRUX6FEh+qPD1QRNwy+zYOtXMpuLVJ9rlN4=";
   };
 
   useFetchCargoVendor = true;
-  cargoHash = "sha256-RFrm2dtjJ2VvOg8ee54ps8MuWgsV0kd9rhpzOFTem2k=";
+  cargoHash = "sha256-YSiqpU9iewpioaB7J8BeIAFp0ebYD4NZVNWcuGIZudI=";
 
   nativeBuildInputs = [
+    libmysqlclient
     pkg-config
     perl
-    libmysqlclient
+    sqlite
   ];
 
   buildInputs = [
     openssl
     mariadb
-    postgresql
     mbedtls
+    postgresql
+    sqlite
   ];
 
   nativeInstallCheckInputs = [
@@ -51,7 +54,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   meta = {
-    description = "OCSP responder fetching certificate status from MySQL/MariaDB database";
+    description = "OCSP responder fetching certificate status from MySQL/MariaDB/PSQL database";
     homepage = "https://github.com/DorianCoding/OCSP-server";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [ liberodark ];
