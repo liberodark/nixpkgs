@@ -119,6 +119,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     apple-sdk_15
   ];
 
+  preBuild = lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+    ulimit -s unlimited 2>/dev/null || ulimit -s 524288 2>/dev/null || true
+  '';
+
   env = {
     V8_FROM_SOURCE = 1;
     PYTHON = "python3";
