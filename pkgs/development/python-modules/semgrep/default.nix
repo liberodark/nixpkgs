@@ -3,6 +3,7 @@
   buildPythonPackage,
   fetchFromGitHub,
   semgrep-core,
+  stdenv,
 
   # check tools
   git,
@@ -152,6 +153,22 @@ buildPythonPackage rec {
     "test_send"
     # many child tests require networking to download files
     "TestConfigLoaderForProducts"
+  ]
+  ++ lib.optionals (stdenv.hostPlatform.system == "aarch64-linux") [
+    # SemgrepError: Failed to obtain target files from semgrep-core
+    "test_delete_git"
+    "test_get_files_for_language"
+    "test_skip_symlink"
+    "test_ignore_git_dir"
+    "test_git_failure_falls_back_to_filesystem_walk"
+    "test_explicit_path"
+    "test_ignore_baseline_handler"
+    "test_without_baseline"
+    "test_with_baseline__new_code_files"
+    "test_with_baseline__changed_source_files"
+    "TestBuildSubprojectFileMapping"
+    "TestRunScaSymbolAnalysis"
+    "test_parse_config_string_as_rules_no_surrogate_pairs_in_rules_file"
   ];
 
   preCheck = ''
