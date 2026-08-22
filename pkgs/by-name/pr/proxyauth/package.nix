@@ -11,7 +11,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "proxyauth";
-  version = "0.8.0";
+  version = "1.0.3";
 
   src = fetchFromForgejo {
     domain = "git.proxyauth.app";
