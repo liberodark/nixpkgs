@@ -24,12 +24,6 @@
   callPackage,
 }:
 
-assert lib.elem stdenv.system [
-  "x86_64-linux"
-  "aarch64-linux"
-  "aarch64-darwin"
-];
-
 let
   common =
     {
@@ -41,7 +35,7 @@ let
     stdenv.mkDerivation (finalAttrs: {
       inherit pname;
       jdk = platformAttrs.${stdenv.system}.jdk or jdk;
-      version = platformAttrs.${stdenv.system}.version or (throw "Unsupported system: ${stdenv.system}");
+      version = (platformAttrs.${stdenv.system} or platformAttrs.x86_64-linux).version;
       src = fetchurl {
         url =
           "mirror://apache/hadoop/common/hadoop-${finalAttrs.version}/hadoop-${finalAttrs.version}"
@@ -50,7 +44,7 @@ let
               "-${platformAttrs.${stdenv.system}.variant}"
           + lib.optionalString stdenv.hostPlatform.isAarch64 "-aarch64"
           + ".tar.gz";
-        inherit (platformAttrs.${stdenv.system} or (throw "Unsupported system: ${stdenv.system}"))
+        inherit (platformAttrs.${stdenv.system} or platformAttrs.x86_64-linux)
           hash
           ;
       };
@@ -184,6 +178,7 @@ in
         jdk = jdk11_headless;
       };
       aarch64-darwin = aarch64-linux;
+      riscv64-linux = x86_64-linux;
     };
     jdk = jdk21_headless;
     # TODO: Package and add Intel Storage Acceleration Library
