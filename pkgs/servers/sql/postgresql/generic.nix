@@ -64,7 +64,7 @@
   icu,
 
   # JIT
-  jitSupport ? stdenv.hostPlatform.canExecute stdenv.buildPlatform,
+  jitSupport ? (stdenv.hostPlatform.canExecute stdenv.buildPlatform && !stdenv.hostPlatform.isRiscV64),
   llvmPackages,
   nukeReferences,
   overrideCC,

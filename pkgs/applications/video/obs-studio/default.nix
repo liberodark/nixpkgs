@@ -31,7 +31,7 @@
   libGL,
   mbedtls,
   wrapGAppsHook3,
-  scriptingSupport ? true,
+  scriptingSupport ? lib.meta.availableOn stdenv.hostPlatform luajit,
   luajit,
   swig,
   python3,
@@ -39,7 +39,7 @@
   alsa-lib,
   pulseaudioSupport ? config.pulseaudio or stdenv.hostPlatform.isLinux,
   libpulseaudio,
-  browserSupport ? true,
+  browserSupport ? lib.meta.availableOn stdenv.hostPlatform cef-binary,
   cef-binary,
   pciutils,
   pipewireSupport ? stdenv.hostPlatform.isLinux,
@@ -264,6 +264,7 @@ stdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
       "i686-linux"
       "aarch64-linux"
+      "riscv64-linux"
     ];
     mainProgram = "obs";
   };
