@@ -784,8 +784,11 @@ let
           platforms = [
             "x86_64-linux"
             "aarch64-linux"
+            "riscv64-linux"
           ]
           ++ lib.optional (!withMono) "i686-linux"
+          # mono needs a dotnet sdk that has no riscv64 port
+          ++ lib.optional (!withMono || lib.meta.availableOn stdenv.hostPlatform dotnet-sdk) "riscv64-linux"
           # 4.3 doesn't compile on darwin, and 4.4 doesn't pass tests
           ++ lib.optionals (lib.versionAtLeast version "4.5") [
             "aarch64-darwin"
