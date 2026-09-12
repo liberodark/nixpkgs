@@ -784,6 +784,7 @@ let
           platforms = [
             "x86_64-linux"
             "aarch64-linux"
+            "riscv64-linux"
           ]
           ++ lib.optional (!withMono) "i686-linux"
           # 4.3 doesn't compile on darwin, and 4.4 doesn't pass tests
