@@ -87,10 +87,10 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "CLANGPP_EXECUTABLE" "${llvmPackages.clang}/bin/clang++")
     (lib.cmakeBool "ISPC_INCLUDE_EXAMPLES" false)
     (lib.cmakeBool "ISPC_INCLUDE_UTILS" false)
-    (lib.cmakeFeature "ARM_ENABLED=" (
+    (lib.cmakeFeature "ARM_ENABLED" (
       if stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isAarch32 then "TRUE" else "FALSE"
     ))
-    (lib.cmakeFeature "X86_ENABLED=" (
+    (lib.cmakeFeature "X86_ENABLED" (
       if stdenv.hostPlatform.isx86_64 || stdenv.hostPlatform.isx86_32 then "TRUE" else "FALSE"
     ))
   ];
