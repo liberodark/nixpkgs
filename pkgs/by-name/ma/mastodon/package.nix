@@ -10,6 +10,7 @@
   writeShellScript,
   brotli,
   python3,
+  rolldown,
 
   # Allow building a fork or custom version of Mastodon:
   pname ? "mastodon",
@@ -61,6 +62,13 @@ stdenv.mkDerivation rec {
 
     RAILS_ENV = "production";
     NODE_ENV = "production";
+
+    preBuild = lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+      rm -rf node_modules/rolldown node_modules/@rolldown/pluginutils
+      cp -r ${rolldown}/lib/node_modules/rolldown node_modules/rolldown
+      cp -r ${rolldown}/lib/node_modules/@rolldown/pluginutils node_modules/@rolldown/pluginutils
+      chmod -R u+w node_modules/rolldown node_modules/@rolldown/pluginutils
+    '';
 
     buildPhase = ''
       runHook preBuild
@@ -185,6 +193,7 @@ stdenv.mkDerivation rec {
       "x86_64-linux"
       "i686-linux"
       "aarch64-linux"
+      "riscv64-linux"
     ];
     maintainers = with lib.maintainers; [
       happy-river
