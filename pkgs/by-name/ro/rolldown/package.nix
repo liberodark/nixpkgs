@@ -52,6 +52,12 @@ stdenv.mkDerivation (finalAttrs: {
     cmake
   ];
 
+  # @oxc-node/core has no riscv64 napi
+  postPatch = lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+    substituteInPlace packages/rolldown/package.json \
+      --replace-fail "oxnode ./" "node --experimental-strip-types ./"
+  '';
+
   buildPhase = ''
     runHook preBuild
 
