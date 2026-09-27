@@ -46,6 +46,7 @@ let
     license = lib.licenses.mit;
     platforms = [
       "aarch64-linux"
+      "riscv64-linux"
       "x86_64-linux"
     ];
     maintainers = with lib.maintainers; [
@@ -190,6 +191,7 @@ let
     outputHash =
       {
         "aarch64-linux" = "sha256-ZdfDKrrcVpNImY8cYa9CPEwI7tuaoPn3kM6MXGGio2U=";
+        "riscv64-linux" = lib.fakeHash;
         "x86_64-linux" = "sha256-p6xjAinU2Isl/uYgoJuacqHN7jBnbWam40J6AQudbtQ=";
       }
       .${stdenvNoCC.hostPlatform.system} or (throw "authentik-webui-deps: unsupported host platform");
@@ -258,7 +260,10 @@ let
       runHook postBuild
     '';
 
-    CHROMEDRIVER_FILEPATH = lib.getExe chromedriver;
+    # chromedriver is only used by web tests and does not eval on riscv64
+    CHROMEDRIVER_FILEPATH = lib.optionalString (!stdenvNoCC.hostPlatform.isRiscV64) (
+      lib.getExe chromedriver
+    );
 
     installPhase = ''
       runHook preInstall
