@@ -134,10 +134,15 @@ let
       }
       .${system} or throwSystem;
   };
+  chromium-nixpkgs = runCommand "playwright-chromium" { nativeBuildInputs = [ makeWrapper ]; } ''
+    makeWrapper ${lib.getExe chromium} $out/chrome-linux64/chrome \
+      --set-default FONTCONFIG_FILE ${fontconfig_file}
+  '';
 in
 {
   x86_64-linux = chromium-linux;
   aarch64-linux = chromium-linux;
+  riscv64-linux = chromium-nixpkgs;
   aarch64-darwin = chromium-darwin;
 }
 .${system} or throwSystem

@@ -48,6 +48,12 @@ let
       # These libraries are already provided via rpath by autoPatchelfHook and wrapProgram.
       substituteInPlace packages/playwright-core/src/server/registry/index.ts \
         --replace-fail "['libGLESv2.so.2', 'libx264.so']" "[]"
+    ''
+    + lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+      substituteInPlace packages/utils/hostPlatform.ts \
+        --replace-fail \
+          "if (!['x64', 'arm64'].includes(os.arch()))" \
+          "if (os.arch() === 'riscv64') return { hostPlatform: 'ubuntu24.04-x64', isOfficiallySupportedPlatform: false }; if (!['x64', 'arm64'].includes(os.arch()))"
     '';
 
     installPhase = ''
@@ -78,7 +84,12 @@ let
       maintainers = with lib.maintainers; [
         kalekseev
       ];
-      inherit (nodejs.meta) platforms;
+      platforms = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "riscv64-linux"
+        "x86_64-linux"
+      ];
     };
   };
 
@@ -165,8 +176,8 @@ let
   browsers = lib.makeOverridable (
     {
       withChromium ? true,
-      withFirefox ? true,
-      withWebkit ? true, # may require `export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE="ubuntu-24.04"`
+      withFirefox ? !stdenv.hostPlatform.isRiscV64,
+      withWebkit ? !stdenv.hostPlatform.isRiscV64,
       withFfmpeg ? true,
       withChromiumHeadlessShell ? true,
       fontconfig_file ? makeFontsConf {

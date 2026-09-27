@@ -1,4 +1,8 @@
 {
+  lib,
+  chromium,
+  runCommand,
+  makeWrapper,
   fetchzip,
   revision,
   browserVersion,
@@ -76,10 +80,18 @@ let
       }
       .${system} or throwSystem;
   };
+
+  headless-shell-nixpkgs =
+    runCommand "playwright-chromium-headless-shell" { nativeBuildInputs = [ makeWrapper ]; }
+      ''
+        makeWrapper ${lib.getExe chromium} $out/chrome-headless-shell-linux64/chrome-headless-shell \
+          --add-flags "--headless"
+      '';
 in
 {
   x86_64-linux = linux;
   aarch64-linux = linux;
+  riscv64-linux = headless-shell-nixpkgs;
   aarch64-darwin = darwin;
 }
 .${system} or throwSystem
