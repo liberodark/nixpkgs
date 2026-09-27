@@ -144,7 +144,9 @@ let
               pydantic
             ]
             ++ lib.optionals stdenv.hostPlatform.isDarwin [ py.pkgs.appdirs ]
-            ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [ octoprint-pisupport ];
+            ++ lib.optionals (lib.meta.availableOn stdenv.hostPlatform self.pkgs.libraspberrypi) [
+              octoprint-pisupport
+            ];
 
           nativeCheckInputs = with self; [
             ddt
