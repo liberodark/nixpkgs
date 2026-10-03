@@ -1,0 +1,24 @@
+--- a/vllm/transformers_utils/configs/laguna.py
++++ b/vllm/transformers_utils/configs/laguna.py
+@@ -71,12 +71,15 @@
+         # (rope_parameters). Translate v5 → v4 so downstream code has one path.
+         if rope_parameters is not None:
+             rp = dict(rope_parameters)
+-            rope_theta = float(rp.pop("rope_theta", rope_theta))
+-            rt = rp.pop("rope_type", None)
+-            if rt is not None and rt != "default":
+-                rope_scaling = {"rope_type": rt, **rp}
+-            elif rp and rope_scaling is None:
+-                rope_scaling = {"rope_type": "default", **rp}
++            if rp and all(isinstance(v, dict) for v in rp.values()):
++                kwargs["rope_parameters"] = rp
++            else:
++                rope_theta = float(rp.pop("rope_theta", rope_theta))
++                rt = rp.pop("rope_type", None)
++                if rt is not None and rt != "default":
++                    rope_scaling = {"rope_type": rt, **rp}
++                elif rp and rope_scaling is None:
++                    rope_scaling = {"rope_type": "default", **rp}
+ 
+         self.vocab_size = vocab_size
+         self.hidden_size = hidden_size
