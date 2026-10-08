@@ -137,6 +137,7 @@ buildGoModule (
         "x86_64-linux"
         "aarch64-linux"
         "aarch64-darwin"
+        "riscv64-linux"
       ];
     };
   }
