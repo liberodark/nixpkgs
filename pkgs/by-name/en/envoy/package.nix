@@ -13,6 +13,8 @@
   cmake,
   gn,
   openjdk11_headless,
+  openjdk17_headless,
+  luajit,
   ninja,
   patchelf,
   python312,
@@ -25,7 +27,7 @@
   git,
 
   # v8 (upstream default), wavm, wamr, wasmtime, disabled
-  wasmRuntime ? "wasmtime",
+  wasmRuntime ? if stdenv.hostPlatform.isRiscV64 then "wamr" else "wasmtime",
 
   # Allows overriding the deps hash used for building - you will likely need to
   # set this if you have changed the 'wasmRuntime' setting.
@@ -56,11 +58,16 @@ let
       {
         x86_64-linux = "sha256-EUPWZ8N8wXtnOle8WMLfdxQEdCnTv1JJSbgG39UOoMc=";
         aarch64-linux = "sha256-WltewtSjwvmYfZQwYAslCCoBdLY1MyO9jnMC/bCzVeg=";
+        riscv64-linux = lib.fakeHash;
       }
       .${stdenv.system} or (throw "unsupported system ${stdenv.system}");
 
   python3 = python312;
-  jdk = openjdk11_headless;
+  jdk =
+    if lib.meta.availableOn stdenv.hostPlatform openjdk11_headless then
+      openjdk11_headless
+    else
+      openjdk17_headless;
 
 in
 buildBazelPackage rec {
@@ -122,6 +129,20 @@ buildBazelPackage rec {
       --subst-var-by bash "$(type -p bash)"
     cat bazel/nix/rules_rust_extra.patch bazel/rules_rust.patch > bazel/nix/rules_rust.patch
     mv bazel/nix/rules_rust.patch bazel/rules_rust.patch
+  ''
+  + lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+    cat ${./rules_rust_riscv64.patch} >> bazel/rules_rust.patch
+    cp ${./rules_buf_riscv64.patch} api/bazel/rules_buf_riscv64.patch
+    substituteInPlace api/bazel/repositories.bzl \
+      --replace-fail 'name = "rules_buf",' 'name = "rules_buf",
+        patch_args = ["-p1"],
+        patches = ["@envoy_api//bazel:rules_buf_riscv64.patch"],'
+    substituteInPlace bazel/dependency_imports.bzl \
+      --replace-fail '    "darwin_amd64": [' '    "linux_riscv64": ["go" + GO_VERSION + ".linux-riscv64.tar.gz", "e92c19ff15a9004fe43e1f62d433555250ef9fe3fabee3dc29ebd4802c2b8021"],
+        "darwin_amd64": ['
+    substituteInPlace bazel/nix/BUILD.bazel \
+      --replace-fail '"aarch64": "aarch64-unknown-linux-gnu",' '"aarch64": "aarch64-unknown-linux-gnu",
+        "riscv64": "riscv64gc-unknown-linux-gnu",'
   '';
 
   nativeBuildInputs = [
@@ -229,9 +250,13 @@ buildBazelPackage rec {
       # Remove Unix timestamps from go cache.
       rm -rf $bazelOut/external/bazel_gazelle_go_repository_cache/{gocache,pkg/mod/cache,pkg/sumdb}
 
-      # fix tcmalloc failure https://github.com/envoyproxy/envoy/issues/30838
-      sed -i '/TCMALLOC_GCC_FLAGS = \[/a"-Wno-changes-meaning",' $bazelOut/external/com_github_google_tcmalloc/tcmalloc/copts.bzl
-
+      ${
+        # riscv64 falls back to gperftools, so tcmalloc is not fetched there
+        lib.optionalString (!stdenv.hostPlatform.isRiscV64) ''
+          # fix tcmalloc failure https://github.com/envoyproxy/envoy/issues/30838
+          sed -i '/TCMALLOC_GCC_FLAGS = \[/a"-Wno-changes-meaning",' $bazelOut/external/com_github_google_tcmalloc/tcmalloc/copts.bzl
+        ''
+      }
       # Install repinned rules_rust lockfile
       cp source/extensions/dynamic_modules/sdk/rust/Cargo.Bazel.lock $bazelOut/external/Cargo.Bazel.lock
 
@@ -274,6 +299,15 @@ buildBazelPackage rec {
 
       # Install repinned rules_rust lockfile
       cp $bazelOut/external/Cargo.Bazel.lock source/extensions/dynamic_modules/sdk/rust/Cargo.Bazel.lock
+    ''
+    + lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+      # LuaJIT has no riscv64 backend
+      luajitSrc=$bazelOut/external/com_github_luajit_luajit
+      find $luajitSrc -mindepth 1 -maxdepth 1 ! -name BUILD.bazel ! -name 'WORKSPACE*' ! -name REPO.bazel -exec rm -rf {} +
+      cp -r ${luajit.src}/. $luajitSrc/
+      chmod -R u+w $luajitSrc
+      patch -d $luajitSrc -p1 < bazel/foreign_cc/luajit.patch
+      chmod +x $luajitSrc/build.py
     '';
     installPhase = ''
       install -Dm0755 bazel-bin/source/exe/envoy-static $out/bin/envoy
@@ -320,7 +354,8 @@ buildBazelPackage rec {
     #   611 |       : [end_ptr] "=&r"(end_ptr), [cpu_id] "=&r"(cpu_id),
     #       |         ^
     "--define=tcmalloc=disabled"
-  ]);
+  ])
+  ++ lib.optional stdenv.hostPlatform.isRiscV64 "--extra_toolchains=//bazel/nix:rust_nix_riscv64";
 
   bazelFetchFlags = [
     "--define=wasm=${wasmRuntime}"
@@ -331,7 +366,8 @@ buildBazelPackage rec {
     # https://github.com/bazelbuild/rules_go/issues/3844
     "--repo_env=GOPROXY=https://proxy.golang.org,direct"
     "--repo_env=GOSUMDB=sum.golang.org"
-  ];
+  ]
+  ++ lib.optional stdenv.hostPlatform.isRiscV64 "--extra_toolchains=//bazel/nix:rust_nix_riscv64";
 
   requiredSystemFeatures = [ "big-parallel" ];
 
@@ -383,6 +419,7 @@ buildBazelPackage rec {
     platforms = [
       "x86_64-linux"
       "aarch64-linux"
+      "riscv64-linux"
     ];
   };
 }
