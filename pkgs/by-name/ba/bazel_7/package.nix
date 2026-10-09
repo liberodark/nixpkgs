@@ -57,6 +57,18 @@ let
     hash = "sha256-eQKNB38G8ziDuorzoj5Rne/DZQL22meVLrdK0z7B2FI=";
   };
 
+  vendorDeps = lib.elem stdenv.hostPlatform.system [
+    "x86_64-linux"
+    "aarch64-linux"
+    "x86_64-darwin"
+    "aarch64-darwin"
+  ];
+
+  javaTools = fetchurl {
+    url = "https://mirror.bazel.build/bazel_java_tools/releases/java/v13.6.1/java_tools-v13.6.1.zip";
+    hash = "sha256-dMl46rBArU7DjODQlwrIE8wsb09vTxIcBBRxlIftyZE=";
+  };
+
   defaultShellUtils =
     # Keep this list conservative. For more exotic tools, prefer to use
     # @rules_nixpkgs to pull in tools from the nix repository. Example:
@@ -397,7 +409,7 @@ stdenv.mkDerivation rec {
     })
   ]
   # See enableNixHacks argument above.
-  ++ lib.optional enableNixHacks ./nix-build-bazel-package-hacks.patch;
+  ++ lib.optional (enableNixHacks && vendorDeps) ./nix-build-bazel-package-hacks.patch;
 
   postPatch =
     let
@@ -531,7 +543,21 @@ stdenv.mkDerivation rec {
       }
     ''
     + lib.optionalString stdenv.hostPlatform.isDarwin darwinPatches
-    + genericPatches;
+    + genericPatches
+    + lib.optionalString (enableNixHacks && !vendorDeps) ''
+      sedVerbose compile.sh \
+        -e "/^new_step 'Building Bazel with Bazel'/a patch -p1 < ${./nix-build-bazel-package-hacks.patch}"
+    ''
+    + lib.optionalString stdenv.hostPlatform.isRiscV64 ''
+      cp ${./rules_java-riscv64-jni.patch} third_party/rules_java-riscv64-jni.patch
+      cat >> MODULE.bazel <<'EOF'
+      single_version_override(
+          module_name = "rules_java",
+          patch_strip = 1,
+          patches = ["//third_party:rules_java-riscv64-jni.patch"],
+      )
+      EOF
+    '';
 
   meta = {
     homepage = "https://github.com/bazelbuild/bazel/";
@@ -580,12 +606,24 @@ stdenv.mkDerivation rec {
     mkdir bazel_src
     shopt -s dotglob extglob
     mv !(bazel_src) bazel_src
-    # Augment bundled repository_cache with our extra paths
-    mkdir vendor_dir
-    ${lndir}/bin/lndir ${bazelDeps}/vendor_dir vendor_dir
-    rm vendor_dir/VENDOR.bazel
-    find vendor_dir -maxdepth 1 -type d -printf "pin(\"@@%P\")\n" > vendor_dir/VENDOR.bazel
-  '';
+  ''
+  + (
+    if vendorDeps then
+      ''
+        mkdir vendor_dir
+        ${lndir}/bin/lndir ${bazelDeps}/vendor_dir vendor_dir
+        rm vendor_dir/VENDOR.bazel
+        find vendor_dir -maxdepth 1 -type d -printf "pin(\"@@%P\")\n" > vendor_dir/VENDOR.bazel
+      ''
+    else
+      ''
+        mkdir vendor_dir
+        touch vendor_dir/VENDOR.bazel
+        javaToolsDir=bazel_src/derived/repository_cache/content_addressable/sha256/74c978eab040ad4ec38ce0d0970ac813cc2c6f4f6f4f121c0414719487edc991
+        mkdir -p $javaToolsDir
+        cp ${javaTools} $javaToolsDir/file
+      ''
+  );
   buildPhase = ''
     runHook preBuild
     export HOME=$(mktemp -d)
