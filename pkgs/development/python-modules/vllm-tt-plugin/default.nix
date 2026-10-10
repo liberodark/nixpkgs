@@ -2,7 +2,10 @@
   lib,
   buildPythonPackage,
   fetchFromGitHub,
+  gnugrep,
+  python,
   pythonAtLeast,
+  runCommand,
   setuptools,
   tblib,
   pytestCheckHook,
@@ -13,7 +16,7 @@ let
   vllmVersion = lib.versions.majorMinor vllm.version;
 in
 
-buildPythonPackage {
+buildPythonPackage (finalAttrs: {
   pname = "vllm-tt-plugin";
   version = "0.1.0-unstable-2026-10-09";
   pyproject = true;
@@ -50,6 +53,33 @@ buildPythonPackage {
 
   disabledTestPaths = [ "tests/tt" ];
 
+  passthru = {
+    tests = {
+      vllm-tt-plugin-can-be-loaded-by-vllm =
+        runCommand "vllm-tt-plugin-can-be-loaded-by-vllm"
+          {
+            nativeBuildInputs = [
+              gnugrep
+              (python.withPackages (ps: [
+                ps.vllm
+                finalAttrs.finalPackage
+              ]))
+            ];
+          }
+          # Note that grepping vllm's output directly
+          # would kill it prematurely when a match occurs,
+          # hence redirect to a file, then grep.
+          ''
+            (
+            set -ex
+            vllm --version >/tmp/vllm.log
+            grep -qF -- '- tt -> vllm_tt_plugin.entrypoints:platform_plugin' /tmp/vllm.log
+            touch $out
+            )
+          '';
+    };
+  };
+
   meta = {
     description = "Tenstorrent backend plugin for vLLM";
     homepage = "https://github.com/tenstorrent/vllm-tt-plugin";
@@ -61,4 +91,4 @@ buildPythonPackage {
         "0.29"
       ]);
   };
-}
+})
