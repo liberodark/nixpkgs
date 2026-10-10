@@ -218,13 +218,14 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.enableFeature false "ffmpeg_a")
     "--yasm=${buildPackages.yasm}/bin/yasm"
     # Note, the `target` vs `host` confusion is intentional.
-    "--target=${stdenv.hostPlatform.config}"
+    # configure doesn't know riscv64, use generic-linux
+    "--target=${if stdenv.hostPlatform.isRiscV64 then "generic-linux" else stdenv.hostPlatform.config}"
   ]
   ++ lib.optional (!jackaudioSupport) "--disable-jack"
   ++ lib.optional (useUnfreeCodecs && codecs != null && !crossBuild) "--codecsdir=${codecs}"
   ++ lib.optional (stdenv.hostPlatform.isx86 && !crossBuild) "--enable-runtime-cpudetection"
   ++ lib.optional fribidiSupport "--enable-fribidi"
-  ++ lib.optional (stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAarch64) "--enable-vidix"
+  ++ lib.optional (stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isx86) "--enable-vidix"
   ++ lib.optional stdenv.hostPlatform.isLinux "--enable-fbdev"
   ++ lib.optionals crossBuild [
     "--enable-cross-compile"
@@ -302,6 +303,7 @@ stdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
       "aarch64-darwin"
       "aarch64-linux"
+      "riscv64-linux"
     ];
     # last successful hydra build on darwin was in 2025
     broken = stdenv.hostPlatform.isDarwin;
