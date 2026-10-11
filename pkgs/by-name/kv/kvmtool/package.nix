@@ -5,6 +5,10 @@
   dtc,
 }:
 
+let
+  withLibfdt = stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isRiscV64;
+in
+
 stdenv.mkDerivation {
   pname = "kvmtool";
   version = "0-unstable-2026-08-06";
@@ -17,7 +21,7 @@ stdenv.mkDerivation {
 
   patches = [ ./strlcpy-glibc-2.38-fix.patch ];
 
-  buildInputs = lib.optionals stdenv.hostPlatform.isAarch64 [ dtc ];
+  buildInputs = lib.optionals withLibfdt [ dtc ];
 
   # glibc 2.43 C23 const-preserving strchr/strstr macros
   env.NIX_CFLAGS_COMPILE = "-Wno-error=discarded-qualifiers";
@@ -29,7 +33,7 @@ stdenv.mkDerivation {
     "CROSS_COMPILE=${stdenv.cc.targetPrefix}"
     "ARCH=${stdenv.hostPlatform.linuxArch}"
   ]
-  ++ lib.optionals stdenv.hostPlatform.isAarch64 [
+  ++ lib.optionals withLibfdt [
     "LIBFDT_DIR=${dtc}/lib"
   ];
 
@@ -45,6 +49,7 @@ stdenv.mkDerivation {
     platforms = [
       "x86_64-linux"
       "aarch64-linux"
+      "riscv64-linux"
     ];
     mainProgram = "lkvm";
   };
