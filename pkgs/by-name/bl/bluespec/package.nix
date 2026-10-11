@@ -290,6 +290,7 @@ stdenv.mkDerivation rec {
     license = lib.licenses.bsd3;
     platforms = [
       "aarch64-linux"
+      "riscv64-linux"
       "x86_64-linux"
     ]
     ++ lib.platforms.darwin;
