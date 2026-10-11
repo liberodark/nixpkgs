@@ -39,6 +39,15 @@ rustPlatform.buildRustPackage (finalAttrs: {
   env.OPENSSL_NO_VENDOR = true;
   env.ZSTD_SYS_USE_PKG_CONFIG = true;
 
+  # test_infra has no riscv64 support
+  cargoBuildFlags = lib.optionals stdenv.hostPlatform.isRiscV64 [
+    "--workspace"
+    "--exclude"
+    "test_infra"
+    "--exclude"
+    "performance-metrics"
+  ];
+
   cargoTestFlags = [
     "--workspace"
     "--exclude"
@@ -47,6 +56,16 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "net_util" # /dev/net/tun
     "--exclude"
     "vmm" # /dev/kvm
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isRiscV64 [
+    "--exclude"
+    "test_infra"
+    "--exclude"
+    "performance-metrics"
+    "--exclude"
+    "cloud-hypervisor"
+  ]
+  ++ [
     "--"
     # io_uring syscalls are blocked by the Lix sandbox
     "--skip=formats"
