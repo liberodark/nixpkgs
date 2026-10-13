@@ -67,6 +67,7 @@ stdenv.mkDerivation (finalAttrs: {
         "arm"
         "arm64"
         "ia32"
+        "riscv64"
         "x64"
       ];
       libc = [
@@ -95,7 +96,7 @@ stdenv.mkDerivation (finalAttrs: {
       runHook postBuild
     '';
 
-    outputHash = "sha256-n5SkXCWOsqdyZkng5EU0HJDKJ0xorfi6SfNvwnuhFTg=";
+    outputHash = "sha256-++f4xzaIt08Ei23H4YsjPjetax6FOU1+em3jRI+x0OQ=";
     outputHashMode = "recursive";
   };
 
@@ -152,6 +153,7 @@ stdenv.mkDerivation (finalAttrs: {
       "x86_64-linux"
       "aarch64-linux"
       "aarch64-darwin"
+      "riscv64-linux"
     ];
     maintainers = with lib.maintainers; [
       mkg20001
