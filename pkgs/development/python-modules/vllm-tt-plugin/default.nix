@@ -13,12 +13,12 @@
 }:
 
 let
-  supportedVllmVersions = [ "0.29.0" ];
+  supportedVllmVersions = [ "0.32.0" ];
 in
 
 buildPythonPackage (finalAttrs: {
   pname = "vllm-tt-plugin";
-  version = "0.1.0-unstable-2026-10-09";
+  version = "0.1.0-unstable-2026-10-27";
   pyproject = true;
   __structuredAttrs = true;
 
@@ -27,9 +27,12 @@ buildPythonPackage (finalAttrs: {
   src = fetchFromGitHub {
     owner = "tenstorrent";
     repo = "vllm-tt-plugin";
-    rev = "c62035d8f16eb591b258a7d5f2b329495829a74c";
-    hash = "sha256-Vq1RLb2+4XzxP9BGYrUaLlCo2JXH/RFL2DtNO1ndp18=";
+    rev = "82322afc95c44d72b72b45760564c4391f1f08aa";
+    hash = "sha256-ZHHUfkfLXiPIg2W57m0K7psi0f5PUBNNAP69x8l6YDo=";
   };
+
+  # vLLM 0.31 (tenstorrent/vllm-tt-plugin#254) and 0.32
+  patches = [ ./vllm-0.32.patch ];
 
   postPatch = ''
     substituteInPlace pyproject.toml \
@@ -48,7 +51,7 @@ buildPythonPackage (finalAttrs: {
   ];
 
   preCheck = ''
-    export PYTHONPATH=$PWD/ci/host-stubs:$PYTHONPATH
+    export PYTHONPATH=$PWD/tests/host-stubs:$PYTHONPATH
   '';
 
   # Disable Hardware Tests
